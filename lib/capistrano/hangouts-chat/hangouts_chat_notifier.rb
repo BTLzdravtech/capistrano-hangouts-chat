@@ -1,5 +1,13 @@
-require_relative 'hangouts_chat/http'
-require_relative 'hangouts_chat/exceptions'
+require 'net/http'
+require 'json'
+
+class GoogleAPIError < StandardError
+  def initialize(response)
+    msg = "HTTP #{response.code} #{response.msg}\n"
+    msg += "Body:\n#{response.body}"
+    super(msg)
+  end
+end
 
 class HangoutsChatNotifier
   attr_reader :webhook_url
@@ -14,19 +22,15 @@ class HangoutsChatNotifier
 
   private
 
-  # def simple(text)
-  #   payload = { text: text }
-  #   send_request(payload)
-  # end
-
-  # def card(header, sections)
-  #   payload = { cards: [header: header, sections: sections] }
-  #   send_request(payload)
-  # end
-
   def send_request(message)
-    response = HTTP.new(@webhook_url).post message
-    raise APIError, response unless response.is_a?(Net::HTTPSuccess)
-    response
+    uri = URI(@webhook_url)
+    req = Net::HTTP::Post.new(uri)
+    req['Content-Type'] = 'application/json'
+    req.body = message.to_json
+
+    response = Net::HTTP.start(uri.hostname, uri.port, :ENV, use_ssl: true) do |http|
+                 http.request(req)
+               end
+    raise GoogleAPIError, response unless response.is_a?(Net::HTTPSuccess)
   end
 end
