@@ -3,8 +3,7 @@ namespace :hangouts_chat do
   task :send_message do
     run_locally do
       HangoutsChatNotifier.new(
-        webhook_url: fetch(:slack_webhook_url),
-        options: fetch(:slack_options, {})
+        webhook_url: fetch(:webhook_url)
       ).notify(fetch(:message, nil))
     end
   end
